@@ -61,8 +61,8 @@ function promisifyCommand(command) {
 app.get("/cut", async(req,res) => {
     
     let ffmpeg = require("fluent-ffmpeg");
-    // const targetMP4File =  './fromtoNode/concat/test.mp3';  //영상 파일
-    const targetMP4File =  '/Users/sonykyum/Desktop/fromtoNode/concat/test.mp3';  //영상 파일
+    const targetMP4File =  './fromtoNode/concat/test.mp3';  //영상 파일
+    // const targetMP4File =  '/Users/sonykyum/Desktop/fromtoNode/concat/test.mp3';  //영상 파일
     var array = ['00:01:00','00:10:00']
     const targetStorageFilePath = 'channel/sid_uid.mp3'
     const options = {
@@ -70,7 +70,8 @@ app.get("/cut", async(req,res) => {
         };
 
     for(i=0;i<array.length;i++){ 
-        let to_changed_time_mp4 = `/Users/sonykyum/Desktop/fromtoNode/concat/change${i}.mp3`  //영상 파일
+        // let to_changed_time_mp4 = `/Users/sonykyum/Desktop/fromtoNode/concat/change${i}.mp3`  //영상 파일
+        let to_changed_time_mp4 = `./fromtoNode/concat/change${i}.mp3`  //영상 파일
         let command = ffmpeg(targetMP4File)
             .outputOptions(`-ss ${array[i]}`)
             .outputOptions("-t 00:00:13")
@@ -84,7 +85,8 @@ app.get("/cut", async(req,res) => {
 
 app.get("/upload", async(req,res) => {
     const fileBucket = 'recording-test-c0299.appspot.com'; // The Storage bucket that contains the file.  
-    let to_changed_time_mp4 = '/Users/sonykyum/Desktop/fromtoNode/concat/test.mp4'
+    // let to_changed_time_mp4 = '/Users/sonykyum/Desktop/fromtoNode/concat/test.mp4'
+    let to_changed_time_mp4 = './fromtoNode/concat/change1.mp3'  //영상 파일
     const targetStorageFilePath = 'channel/sid_uid.mp3'
     const options = {
         destination: targetStorageFilePath,
