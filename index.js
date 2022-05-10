@@ -12,7 +12,6 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig)
 initializeApp();
-const db = getFirestore();
 
 const express = require("express");
 const app = express();
@@ -20,20 +19,20 @@ const axios = require("axios");
 require("dotenv").config();
 const fluent_ffmpeg = require('fluent-ffmpeg');
 const { async } = require("@firebase/util");
+const moment = require("moment");
 
 //agora config
 const {RtcTokenBuilder, RtmTokenBuilder, RtcRole, RtmRole} = require('agora-access-token')
-const APP_ID = process.env.APP_ID
-const APP_CERTIFICATE = process.env.APP_CERTIFICATE
+const APP_ID = process.env.APP_ID_DEV
+const APP_CERTIFICATE = process.env.APP_CERTIFICATE_DEV
 const CUSTOMERID = process.env.CUSTOMERID
 const CUSTOMER_SECRET = process.env.CUSTOMER_SECRET
 const Authorization = `Basic ${Buffer.from(`${CUSTOMERID}:${CUSTOMER_SECRET}`).toString("base64")}`;
 
-// const port = process.env.PORT || 3000;
-// app.listen(port, () => console.log(`Server listening at Port ${port}`));
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Server listening at Port ${port}`));
 
 const path = require('path');
-const ffmpeg = require('fluent-ffmpeg');
 const cwd = path.join(__dirname, '..');
 const {Storage} = require('@google-cloud/storage');
 const storage = new Storage();
@@ -63,25 +62,24 @@ app.post("/clip", async(req,res) => {
         // const channel = req.body.channel
         const rid = req.body.rid
         const sid = req.body.sid
-        const channelName = req.body.channelName
-        const filePath = `room/${rid}/${sid}_${channelName}_0.mp4`; // 스토리지에 저장되어있는 파일 이름 
+        const filePath = `room/${rid}/${sid}_${rid}_0.mp4`; // 스토리지에 저장되어있는 파일 이름 
         const destFileName = path.join(cwd, `/room/${rid}.mp4`) // 지정한 저장 경로에 지정한 형식으로 파일 저장
 
         await bucket.file(filePath).download({destination: destFileName});
-        let ffmpeg = require("fluent-ffmpeg");
+        // let ffmpeg = require("fluent-ffmpeg");
         var array = req.body.clipTime
 
         for(i=0;i<array.length;i++){ 
             let uid = array[i].uid
             let to_changed_time_mp3 = path.join(cwd,`/room/clip_${uid}.mp4`)   // 클립을 딴 영상 파일
-            let nowdate = new Date();
-            let command = ffmpeg(destFileName)
+            const data = moment(new Date())
+            let command = fluent_ffmpeg(destFileName)
                 .outputOptions(`-ss ${array[i].time}`)
                 .outputOptions("-t 00:00:30")
                 .output(to_changed_time_mp3);
             
             await promisifyCommand(command); 
-            let targetStorageFilePath = `clip/${uid}/${rid}_${nowdate.yyyyMMddHHmmss()}.mp4`
+            let targetStorageFilePath = `clip/${uid}/${rid}_${data.format("YYYYMMDDHHmmss")}.mp4`
             // Uploading the audio
             await bucket.upload(to_changed_time_mp3, {destination: targetStorageFilePath});
             // Delete cilp file
@@ -101,7 +99,7 @@ app.post("/acquire", async (req, res) => {
           `https://api.agora.io/v1/apps/${APP_ID}/cloud_recording/acquire`,
           {
             cname: req.body.channel,
-            uid: req.body.uid,
+            uid: '123',
             clientRequest: {
               resourceExpiredHour: 24,
               scene : 0
@@ -148,22 +146,15 @@ app.post("/start", async (req, res) => {
           `https://api.agora.io/v1/apps/${APP_ID}/cloud_recording/resourceid/${resource}/mode/mix/start`,
           {
             cname: req.body.channel,
-            uid: req.body.uid,
+            uid: '123',
             clientRequest: {
-              token: req.body.token,
+              // token: req.body.token,
               recordingConfig: {
-                maxIdleTime: 30,
-                streamTypes: 2,
+                maxIdleTime: 10,
+                streamTypes: 0,
                 channelType: 0,
-                videoStreamType: 0,
-                transcodingConfig: {
-                  height: 640,
-                  width: 360,
-                  bitrate: 500,
-                  fps: 15,
-                  mixedVideoLayout: 1,
-                  backgroundColor: "#FFFFFF",
-                },
+                subscribeUidGroup: 0,
+                subscribeAudioUids: ["#allstream#"], 
               },
               recordingFileConfig: {
                 avFileType: [
@@ -202,7 +193,7 @@ app.post("/stop", async (req, res) => {
           `https://api.agora.io/v1/apps/${APP_ID}/cloud_recording/resourceid/${resource}/sid/${sid}/mode/mix/stop`,
           {
             cname: req.body.channel,
-            uid: req.body.uid,
+            uid: '123',
             clientRequest: {},
           },
           { headers: { Authorization } }
@@ -213,30 +204,6 @@ app.post("/stop", async (req, res) => {
       }
   });
 
-Date.prototype.yyyyMMddHHmmss = function () {
-    var date = this;
-    var year = date.getFullYear();
-    var month = date.getMonth() + 1;
-    var day = date.getDate();
-    var hh = date.getHours();
-    var mm = date.getMinutes();
-    var ss = date.getSeconds();
-
-    return "" + year +
-    (month < 10 ? "0" + month : month) +
-    (day < 10 ? "0" + day : day) +
-    (hh < 10 ? "0" + hh : hh) +
-    (mm < 10 ? "0" + mm : mm) +
-    (ss < 10 ? "0" + ss : ss);
-};
-
-
-async function listFiles() {
-    var a = ''
-    const snapshot = await db.collection('room').doc('v1').collection('private').doc('n1oMGqjTGLwGmjXxc9Y9').get().then(function(doc){
-    a = doc.data().asd
-    })
-    console.log(a)
-}
-
-listFiles();
+  app.get("hello", async (req, res)=> {
+    return res.status(200).send("hello world");
+  })
