@@ -1,43 +1,60 @@
-const firebase = require("firebase/app");
-const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
-const { getFirestore, Timestamp, FieldValue } = require('firebase-admin/firestore');
-const firebaseConfig = {
-  apiKey: process.env.APIKEY,
-  authDomain:  process.env.AUTHDOMAIN,
-  projectId:  process.env.PROJECTID,
-  storageBucket:  process.env.STORAGEBUCKET,
-  messagingSenderId:  process.env.MESSAGEINGSENDERID,
-  appId: process.env.STORAGEID,
-  measurementId: process.env.MEASUREMENTID
-};
-firebase.initializeApp(firebaseConfig)
-initializeApp();
+//env 경로 설정
+const dotenv = require("dotenv")
+const path = require('path');
+let envPath; 
+switch (process.env.NODE_ENV) { 
+    case "prd": 
+      envPath = path.join(__dirname, 'config/.env.prd');
+      console.log(envPath)
+        break; 
+    case "stg": 
+      envPath = path.join(__dirname, 'config/.env.stg');
+        break; 
+    default: 
+      envPath = path.join(__dirname, 'config/.env.stg');
+      console.log(envPath)
+} 
+dotenv.config({ path: envPath }); // path 설정
+
+const admin = require("firebase-admin");
+const {Storage} = require('@google-cloud/storage');
 
 const express = require("express");
 const app = express();
 const axios = require("axios");
-require("dotenv").config();
 const fluent_ffmpeg = require('fluent-ffmpeg');
 const { async } = require("@firebase/util");
 const moment = require("moment");
+const {RtcTokenBuilder, RtcRole} = require('agora-access-token')
+
+//firebase config
+const firebaseConfig = {
+    apiKey: process.env.APIKEY,
+    authDomain:  process.env.AUTHDOMAIN,
+    databaseURL:  process.env.DATABASEURL,
+    projectId: process.env.PROJECTID,
+    storageBucket: process.env.STORAGEBUCKET,
+    messagingSenderId: process.env.MESSAGEINGSENDERID,
+    appId: process.env.STORAGEID,
+    measurementId:process.env.MEASUREMENTID
+  };
+admin.initializeApp(firebaseConfig)
 
 //agora config
-const {RtcTokenBuilder, RtmTokenBuilder, RtcRole, RtmRole} = require('agora-access-token')
-const APP_ID = process.env.APP_ID_DEV
-const APP_CERTIFICATE = process.env.APP_CERTIFICATE_DEV
+const APP_ID = process.env.APP_ID
+const APP_CERTIFICATE = process.env.APP_CERTIFICATE
 const CUSTOMERID = process.env.CUSTOMERID
 const CUSTOMER_SECRET = process.env.CUSTOMER_SECRET
 const Authorization = `Basic ${Buffer.from(`${CUSTOMERID}:${CUSTOMER_SECRET}`).toString("base64")}`;
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Server listening at Port ${port}`));
-
-const path = require('path');
+//file 경로 설정 config
 const cwd = path.join(__dirname, '..');
-const {Storage} = require('@google-cloud/storage');
 const storage = new Storage();
 const fileBucket = process.env.STORAGEBUCKET; // The Storage bucket that contains the file.
 app.use(express.json());
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Server listening at Port ${port}`));
 const fs = require('fs');
 
 // Makes an ffmpeg command return a promise.
